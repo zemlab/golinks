@@ -9,7 +9,7 @@ metadata:
 spec:
   type: ClusterIP
   selector:
-    app: golinks
+    app.kubernetes.io/name: golinks
   ports:
   - protocol: TCP
     name: www
