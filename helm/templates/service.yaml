@@ -1,0 +1,16 @@
+kind: Service
+apiVersion: v1
+metadata:
+  name: golinks
+  {{- if .Values.service.annotations }}
+  annotations:
+    {{- toYaml .Values.service.annotations | nindent 4 }}
+  {{- end }}
+spec:
+  type: LoadBalancer
+  selector:
+    app: golinks
+  ports:
+  - protocol: TCP
+    name: www
+    port: 80
