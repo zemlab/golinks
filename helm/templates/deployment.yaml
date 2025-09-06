@@ -47,4 +47,4 @@ spec:
             name: golinks-redirects
             items:
               - key: redirects.yaml
-                path: redirects.yaml
+                path: config.yaml
