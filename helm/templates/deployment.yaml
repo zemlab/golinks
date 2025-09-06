@@ -44,7 +44,7 @@ spec:
           emptyDir: {}
         - name: redirects
           configMap:
-            name: golinks-config
+            name: golinks-redirects
             items:
               - key: redirects.yaml
                 path: redirects.yaml
