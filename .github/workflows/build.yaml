@@ -48,7 +48,8 @@ jobs:
           FULL_DESCRIBE=$(git describe --tags --always --abbrev=8 --match 'v[0-9]*' | sed 's/^v//')
 
           # Get the 8-char short hash
-          SHORT_HASH=${github.sha:0:7}
+          SHA_HASH=${{ github.sha }}
+          SHORT_HASH=${SHA_HASH:0:7}
 
           # Default version is the full commit hash if no tag is found
           # Use the tag part if found, otherwise use the full short hash for a base
