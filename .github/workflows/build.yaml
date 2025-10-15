@@ -38,7 +38,7 @@ jobs:
           registry: ${{ env.REGISTRY }}
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
-      - name: Get Version Tag (x.y.z-gitshorthash)
+      - name: Get Version Tag
         id: version
         run: |
           # 1. Get the most recent tag (excluding 'v' prefix) and append short hash (8-char)
@@ -48,7 +48,7 @@ jobs:
           FULL_DESCRIBE=$(git describe --tags --always --abbrev=8 --match 'v[0-9]*' | sed 's/^v//')
 
           # Get the 8-char short hash
-          SHORT_HASH_8=${{ github.sha }}:0:8}
+          SHORT_HASH=${github.sha:0:7}
 
           # Default version is the full commit hash if no tag is found
           # Use the tag part if found, otherwise use the full short hash for a base
@@ -59,7 +59,7 @@ jobs:
               FINAL_VERSION="$TAG_BASE"
           else
               # We are NOT on a tag, so construct x.y.z-gitshorthash
-              FINAL_VERSION="${TAG_BASE}-${SHORT_HASH_8}"
+              FINAL_VERSION="${TAG_BASE}-${SHORT_HASH}"
           fi
 
           # Output for subsequent steps
