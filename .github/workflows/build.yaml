@@ -29,6 +29,9 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v5
+        with:
+          # CRITICAL: Fetch full history for git describe to find the latest tag
+          fetch-depth: 0
       - name: Log in to the Container registry
         uses: docker/login-action@v3
         with:
@@ -42,7 +45,7 @@ jobs:
           # --abbrev=8: Use 8-character short hash
           # --match '[0-9]*': Match tags that start with a number (e.g., 1.0.0), ignoring 'v'
           # sed 's/^v//': strip leading 'v' if tags use it
-          FULL_DESCRIBE=$(git describe --tags --always --abbrev=8 --match '[0-9]*' | sed 's/^v//')
+          FULL_DESCRIBE=$(git describe --tags --always --abbrev=8 --match 'v[0-9]*' | sed 's/^v//')
 
           # Get the 8-char short hash
           SHORT_HASH_8=${{ github.sha }}:0:8}
