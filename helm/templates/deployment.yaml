@@ -17,7 +17,7 @@ spec:
     spec:
       initContainers:
         - name: golinks
-          image: ghcr.io/zemlab/golinks:main
+          image: ghcr.io/zemlab/golinks:{{ .Chart.AppVersion }}
           env:
             - name: GOLINKS_CONFIG
               value: /config/redirects.yaml
