@@ -50,3 +50,49 @@ jobs:
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
           platforms: linux/amd64,linux/arm64
+
+  publish-helm-chart:
+    runs-on: ubuntu-latest
+    needs: build-and-push-image # Ensure the image is pushed first
+    permissions:
+      contents: read
+      packages: write # Required to push to GHCR
+    defaults:
+      run:
+        # Assumes your chart directory is named 'helm/chartname'
+        working-directory: ./helm/
+    env:
+      CHART_REPO: zemlab/golinks-helm
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+
+      - name: Set up Helm
+        uses: azure/setup-helm@v4
+        with:
+          version: v3.14.0
+
+      - name: Log in to the Container registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Get Chart Version
+        id: chart_version
+        run: |
+          # Read the version from the Chart.yaml file
+          CHART_VERSION=$(grep 'version:' Chart.yaml | awk '{print $2}')
+          echo "chart_version=$CHART_VERSION" >> $GITHUB_OUTPUT
+
+      - name: Package Chart
+        run: helm package .
+
+      - name: Push Chart to OCI Registry
+        # The resulting chart tag will be based on the version in your Chart.yaml.
+        # Example OCI path: ghcr.io/zemlab/golinks/chart:1.0.0
+        run: |
+          CHART_FILE=$(ls *.tgz)
+          helm push $CHART_FILE oci://${{ env.REGISTRY }}/${{ env.CHART_REPO }}
