@@ -23,6 +23,9 @@ jobs:
       attestations: write
       id-token: write
       #
+    env:
+      CHART_REPO: zemlab/golinks-helm
+      IMAGE_REPO: zemlab/golinks
     steps:
       - name: Checkout repository
         uses: actions/checkout@v5
@@ -32,11 +35,35 @@ jobs:
           registry: ${{ env.REGISTRY }}
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
-      - name: Extract metadata (tags, labels) for Docker
-        id: meta
-        uses: docker/metadata-action@v3
-        with:
-          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+      - name: Get Version Tag (x.y.z-gitshorthash)
+        id: version
+        run: |
+          # 1. Get the most recent tag (excluding 'v' prefix) and append short hash (8-char)
+          # --abbrev=8: Use 8-character short hash
+          # --match '[0-9]*': Match tags that start with a number (e.g., 1.0.0), ignoring 'v'
+          # sed 's/^v//': strip leading 'v' if tags use it
+          FULL_DESCRIBE=$(git describe --tags --always --abbrev=8 --match '[0-9]*' | sed 's/^v//')
+
+          # Get the 8-char short hash
+          SHORT_HASH_8=${{ github.sha }}:0:8}
+
+          # Default version is the full commit hash if no tag is found
+          # Use the tag part if found, otherwise use the full short hash for a base
+          TAG_BASE=$(echo $FULL_DESCRIBE | sed -E 's/(-[0-9]+-g[0-9a-f]{8})//')
+
+          # If the tag base equals the full describe, we are ON a tag (e.g., 1.0.0)
+          if [ "$TAG_BASE" == "$FULL_DESCRIBE" ]; then
+              FINAL_VERSION="$TAG_BASE"
+          else
+              # We are NOT on a tag, so construct x.y.z-gitshorthash
+              FINAL_VERSION="${TAG_BASE}-${SHORT_HASH_8}"
+          fi
+
+          # Output for subsequent steps
+          echo "VERSION_TAG=${FINAL_VERSION}" >> $GITHUB_OUTPUT
+          echo "DOCKER_TAGS=${{ env.REGISTRY }}/${{ env.IMAGE_REPO }}:${FINAL_VERSION}" >> $GITHUB_OUTPUT
+
+          echo "Generated Version Tag: $FINAL_VERSION"
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
       - name: Set up Docker Buildx
@@ -47,45 +74,22 @@ jobs:
         with:
           context: .
           push: true
-          tags: ${{ steps.meta.outputs.tags }}
-          labels: ${{ steps.meta.outputs.labels }}
+          tags: ${{ steps.version.outputs.DOCKER_TAGS }}
           platforms: linux/amd64,linux/arm64
-
-  publish-helm-chart:
-    runs-on: ubuntu-latest
-    needs: build-and-push-image # Ensure the image is pushed first
-    permissions:
-      contents: read
-      packages: write # Required to push to GHCR
-    defaults:
-      run:
-        # Assumes your chart directory is named 'helm/chartname'
-        working-directory: ./helm/
-    env:
-      CHART_REPO: zemlab/golinks-helm
-
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v5
-
       - name: Set up Helm
         uses: azure/setup-helm@v4
         with:
           version: v3.14.0
-
-      - name: Log in to the Container registry
-        uses: docker/login-action@v3
-        with:
-          registry: ${{ env.REGISTRY }}
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Get Chart Version
+      - name: Set Version
         id: chart_version
         run: |
-          # Read the version from the Chart.yaml file
-          CHART_VERSION=$(grep 'version:' Chart.yaml | awk '{print $2}')
-          echo "chart_version=$CHART_VERSION" >> $GITHUB_OUTPUT
+          ## Update the 'version' field (this is often handled by 'helm set version' above, but good for backup)
+          sed -i "s/^version: .*/version: ${{ steps.version.output.VERSION_TAG }}/" Chart.yaml
+
+          # Update the 'appVersion' field
+          sed -i "s/^appVersion: .*/appVersion: ${{ steps.version.output.VERSION_TAG }}/" Chart.yaml
+
+          echo "Updated Chart.yaml version and appVersion to: ${{ steps.version.output.VERSION_TAG}}"
 
       - name: Package Chart
         run: helm package .
