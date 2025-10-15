@@ -85,12 +85,12 @@ jobs:
         working-directory: ./helm/
         run: |
           ## Update the 'version' field (this is often handled by 'helm set version' above, but good for backup)
-          sed -i "s/^version: .*/version: ${{ steps.version.output.VERSION_TAG }}/" Chart.yaml
+          sed -i "s/^version: .*/version: ${{ steps.version.outputs.VERSION_TAG }}/" Chart.yaml
 
           # Update the 'appVersion' field
-          sed -i "s/^appVersion: .*/appVersion: ${{ steps.version.output.VERSION_TAG }}/" Chart.yaml
+          sed -i "s/^appVersion: .*/appVersion: ${{ steps.version.outputs.VERSION_TAG }}/" Chart.yaml
 
-          echo "Updated Chart.yaml version and appVersion to: ${{ steps.version.output.VERSION_TAG}}"
+          echo "Updated Chart.yaml version and appVersion to: ${{ steps.version.outputs.VERSION_TAG}}"
 
       - name: Package Chart
         working-directory: ./helm/
