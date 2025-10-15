@@ -82,6 +82,7 @@ jobs:
           version: v3.14.0
       - name: Set Version
         id: chart_version
+        working-directory: ./helm/
         run: |
           ## Update the 'version' field (this is often handled by 'helm set version' above, but good for backup)
           sed -i "s/^version: .*/version: ${{ steps.version.output.VERSION_TAG }}/" Chart.yaml
@@ -92,11 +93,13 @@ jobs:
           echo "Updated Chart.yaml version and appVersion to: ${{ steps.version.output.VERSION_TAG}}"
 
       - name: Package Chart
+        working-directory: ./helm/
         run: helm package .
 
       - name: Push Chart to OCI Registry
         # The resulting chart tag will be based on the version in your Chart.yaml.
         # Example OCI path: ghcr.io/zemlab/golinks/chart:1.0.0
+        working-directory: ./helm/
         run: |
           CHART_FILE=$(ls *.tgz)
           helm push $CHART_FILE oci://${{ env.REGISTRY }}/${{ env.CHART_REPO }}
