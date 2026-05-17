@@ -2,4 +2,8 @@ redirects:
   - from: /foo
     to: https://example.com
 service: {}
-ingress: {}
+ingress:
+  hostname: ""
+  className: ""
+  annotations: {}
+  tls: false
